@@ -1,7 +1,7 @@
 // Servidor de pruebas que imita el contrato de api/state.php, para poder probar
 // la sincronización en local sin PHP ni MySQL. No forma parte del despliegue.
 //
-//   node scripts/mock-api.mjs [puerto]
+//   node scripts/mock-api.mjs [puerto]        (MOCK_DELAY=3000 para red lenta)
 //
 // Token: el valor de MOCK_TOKEN, o "test" por defecto.
 
@@ -9,6 +9,9 @@ import { createServer } from 'node:http'
 
 const PORT = Number(process.argv[2] || 8787)
 const TOKEN = process.env.MOCK_TOKEN || 'test'
+// MOCK_DELAY simula una red lenta: sirve para comprobar que dos subidas
+// seguidas no se pisan entre ellas.
+const DELAY = Number(process.env.MOCK_DELAY || 0)
 const ORIGINS = ['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:4173']
 
 let revision = 0
@@ -62,6 +65,8 @@ const server = createServer(async (req, res) => {
     send(400, { error: 'JSON no válido.' })
     return
   }
+
+  if (DELAY) await new Promise((r) => setTimeout(r, DELAY))
 
   const force = url.searchParams.get('force') === '1'
   if (!force && Number(body?.revision ?? 0) !== revision) {

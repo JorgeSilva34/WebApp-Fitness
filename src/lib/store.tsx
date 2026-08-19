@@ -64,6 +64,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const metaRef = useRef(meta)
   const adopting = useRef(false)
   const pushTimer = useRef<number | null>(null)
+  const inFlight = useRef(false)
+  const queued = useRef(false)
   const started = useRef(false)
   const mounted = useRef(false)
   const statusRef = useRef(status)
@@ -82,10 +84,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   // --- envío al servidor -------------------------------------------------
 
-  const push = useCallback(
-    async (force = false): Promise<void> => {
+  const pushOnce = useCallback(
+    async (force: boolean): Promise<'ok' | 'conflict' | 'failed'> => {
       const cfg = configRef.current
-      if (!cfg) return
+      if (!cfg) return 'failed'
       setStatus('syncing')
       setError(null)
       try {
@@ -94,20 +96,51 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           setMeta({ revision: result.revision, dirty: false, lastSyncAt: Date.now() })
           serverCopy.current = null
           setStatus('idle')
-        } else {
-          serverCopy.current = { store: result.store, revision: result.revision }
-          setStatus('conflict')
+          return 'ok'
         }
+        serverCopy.current = { store: result.store, revision: result.revision }
+        setStatus('conflict')
+        return 'conflict'
       } catch (e) {
         setError(e instanceof Error ? e.message : String(e))
         setStatus(navigator.onLine ? 'error' : 'offline')
+        return 'failed'
       }
     },
     [setMeta],
   )
 
+  /** Una subida cada vez. Si se pide otra mientras hay una en vuelo, se encola:
+   *  lanzarlas en paralelo mandaría la segunda con una revisión ya caducada y el
+   *  servidor la rechazaría como conflicto con nuestro propio dispositivo. */
+  const push = useCallback(
+    async (force = false): Promise<void> => {
+      if (!configRef.current) return
+      if (inFlight.current) {
+        queued.current = true
+        return
+      }
+      inFlight.current = true
+      try {
+        let pending = true
+        while (pending) {
+          const outcome = await pushOnce(force)
+          force = false
+          pending = outcome === 'ok' && queued.current
+          queued.current = false
+        }
+      } finally {
+        inFlight.current = false
+      }
+    },
+    [pushOnce],
+  )
+
   const schedulePush = useCallback(() => {
     if (!configRef.current) return
+    // Con un conflicto sin resolver, cada intento volvería a chocar: se espera a
+    // que elijas versión.
+    if (statusRef.current === 'conflict') return
     if (pushTimer.current !== null) window.clearTimeout(pushTimer.current)
     pushTimer.current = window.setTimeout(() => {
       pushTimer.current = null

@@ -139,5 +139,52 @@ function withWeights(deltaPerWeek: number, count: number): Store {
   check('no toca http en local', endpointFor('http://localhost:8787/api') === 'http://localhost:8787/api/state.php')
 }
 
+// --- Contrato con la API: lo que devuelve api/state.php debe atravesar
+//     normalize() sin perder ni cambiar nada. El mismo objeto está en
+//     api/selftest.php?roundtrip=1, que lo comprueba contra MySQL. ---
+{
+  const desdeElServidor = {
+    version: 1,
+    profile: { heightCm: 187.5, startWeightKg: 59.4, kcalFloor: 2200, kcalTarget: 3200, proteinTarget: 120 },
+    meals: [
+      { id: 'm1', label: 'Batido al levantarme', anchor: 'Al levantarme', kcal: 800, protein: 35 },
+      { id: 'm2', label: 'Cena', anchor: 'Antes de acostarme', kcal: 700, protein: 30 },
+    ],
+    weights: [
+      { date: '2026-01-02', kg: 59.4 },
+      { date: '2026-01-03', kg: 59.65 },
+    ],
+    intake: { '2026-01-02': { logged: ['m1', 'm2'], extraKcal: 120, extraProtein: 8 } },
+    sessions: [
+      {
+        date: '2026-01-02',
+        day: 'A',
+        entries: { squat: [{ weight: 42.5, reps: 6 }, { weight: 42.5, reps: 5 }] },
+        notes: 'prueba de ida y vuelta',
+        createdAt: 1767312000000,
+      },
+    ],
+    adjustments: [
+      {
+        weekKey: '2026-01-04',
+        deltaKg: 0.35,
+        proposedKcal: 3450,
+        previousKcal: 3200,
+        decision: 'accepted',
+        decidedAt: 1767312000000,
+      },
+    ],
+    reminders: [
+      { id: 'r1', label: 'Cena', time: '00:30', days: [0, 3], enabled: true, kind: 'meal', detail: '~700 kcal' },
+    ],
+  }
+  const normalizado = normalize(desdeElServidor)
+  check(
+    'la respuesta del servidor sobrevive intacta a normalize()',
+    JSON.stringify(normalizado) === JSON.stringify(desdeElServidor),
+    normalizado,
+  )
+}
+
 console.log(failures === 0 ? '\nTodo correcto.' : `\n${failures} comprobaciones fallidas.`)
 process.exit(failures === 0 ? 0 : 1)

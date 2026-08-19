@@ -51,7 +51,8 @@ src/lib/        modelo, persistencia y toda la lógica (sin React salvo store.ts
   nutrition.ts    totales del día, media móvil y revisión semanal
   sync.ts         cliente de la API: subir, traer y detectar conflictos
 src/screens/    Hoy, Sesión, Progreso, Plan, Ajustes
-api/            API en PHP sobre MySQL (state.php) y comprobación (selftest.php)
+api/            API en PHP: endpoint (state.php), mapeo a tablas (store.php),
+                comprobación de la instalación (selftest.php)
 notify/         automatización de avisos al móvil
 scripts/        iconos, comprobaciones y API de pruebas
 ```
@@ -162,8 +163,12 @@ Puesta en marcha, una sola vez:
    archivo no está en el repositorio ni se sube por FTP, así que ningún
    despliegue lo pisa.
 4. Abre `https://tudominio.com/api/selftest.php?token=EL_TOKEN`. Debe responder
-   `"ok": true` y listar las diez tablas —se crean solas la primera vez; si
-   prefieres crearlas a mano, `api/schema.sql` tiene el esquema.
+   `"ok": true` y listar las once tablas —se crean solas la primera vez; si
+   prefieres crearlas a mano, `api/schema.sql` tiene el esquema. Añadiendo
+   `&roundtrip=1` escribe un estado de ejemplo, lo relee y comprueba que las
+   tablas devuelven exactamente lo que se guardó; lo hace dentro de una
+   transacción que se deshace, así que no toca tus datos. Merece la pena
+   lanzarlo una vez tras el primer despliegue.
 5. En la app, **Ajustes → Sincronización**: dirección (`https://tudominio.com`) y
    token. Si la base de datos está vacía se sube lo que haya en el dispositivo;
    si ya tiene datos, se traen.
@@ -172,8 +177,20 @@ El token es la única credencial: quien lo tenga puede leer y escribir tus datos
 Úsalo siempre sobre HTTPS y no lo pegues en sitios públicos.
 
 Tablas: `profile`, `meals`, `weights`, `intake` + `intake_meals`, `sessions` +
-`session_sets`, `adjustments`, `reminders` y `meta` (revisión). Se pueden
-consultar desde phpMyAdmin sin tocar la app.
+`session_sets`, `adjustments`, `reminders`, `meta` (revisión) y `backups`. Se
+pueden consultar desde phpMyAdmin sin tocar la app.
+
+**Red de seguridad.** Cada guardado reemplaza el contenido entero de las tablas,
+así que antes de sobrescribir el servidor guarda una foto del estado anterior en
+`backups`: como mucho una cada media hora, conservando las diez últimas. Si algo
+se borra por error, en phpMyAdmin abres la fila más reciente de `backups`, copias
+el campo `payload`, lo guardas como `.json` y lo cargas con *Ajustes → Importar
+copia*.
+
+**Límite conocido.** La app sube el estado completo en cada guardado, no sólo lo
+que cambió. Hoy son unos pocos KB; con años de historial serán algunos cientos
+de KB por subida, y entonces convendrá pasar a envíos incrementales. Está
+concentrado en `pushState` (cliente) y `write_store` (servidor).
 
 ## Copias de seguridad
 

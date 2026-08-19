@@ -84,6 +84,17 @@ async function request(config: SyncConfig, init: RequestInit & { query?: string 
   }
 }
 
+/** Si la dirección apunta a otro sitio, la respuesta será HTML y no JSON. Más
+ *  vale decirlo con claridad que soltar un error de sintaxis. */
+async function asJson(res: Response): Promise<Record<string, unknown>> {
+  const text = await res.text()
+  try {
+    return JSON.parse(text)
+  } catch {
+    throw new Error('Esa dirección no responde con datos de WebFit. Revisa que apunte a tu dominio y que api/ esté subido.')
+  }
+}
+
 async function readError(res: Response): Promise<string> {
   try {
     const body = await res.json()
@@ -97,7 +108,7 @@ async function readError(res: Response): Promise<string> {
 export async function pullState(config: SyncConfig): Promise<PullResult> {
   const res = await request(config, { method: 'GET' })
   if (!res.ok) throw new Error(await readError(res))
-  const body = await res.json()
+  const body = await asJson(res)
   return {
     revision: Number(body?.revision ?? 0),
     empty: Boolean(body?.empty),
@@ -119,11 +130,11 @@ export async function pushState(
   })
 
   if (res.status === 409) {
-    const body = await res.json()
+    const body = await asJson(res)
     return { ok: false, conflict: true, revision: Number(body?.revision ?? 0), store: normalize(body?.store) }
   }
   if (!res.ok) throw new Error(await readError(res))
 
-  const body = await res.json()
+  const body = await asJson(res)
   return { ok: true, revision: Number(body?.revision ?? revision + 1) }
 }

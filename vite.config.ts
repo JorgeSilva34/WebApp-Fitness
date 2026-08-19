@@ -32,6 +32,9 @@ export default defineConfig({
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2}'],
         navigateFallback: 'index.html',
+        // Sin esto, abrir /api/selftest.php en el navegador devolvería la app
+        // en lugar del PHP.
+        navigateFallbackDenylist: [new RegExp('^/api/')],
         cleanupOutdatedCaches: true,
       },
       devOptions: { enabled: false },

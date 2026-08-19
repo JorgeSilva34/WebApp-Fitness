@@ -108,7 +108,7 @@ function schema_statements(): array
 
         "CREATE TABLE IF NOT EXISTS profile (
             id TINYINT UNSIGNED NOT NULL PRIMARY KEY,
-            height_cm SMALLINT UNSIGNED NOT NULL,
+            height_cm DECIMAL(5,1) NOT NULL,
             start_weight_kg DECIMAL(5,2) NOT NULL,
             kcal_floor SMALLINT UNSIGNED NOT NULL,
             kcal_target SMALLINT UNSIGNED NOT NULL,
@@ -164,6 +164,13 @@ function schema_statements(): array
             previous_kcal MEDIUMINT UNSIGNED NOT NULL DEFAULT 0,
             decision VARCHAR(10) NOT NULL DEFAULT 'dismissed',
             decided_at BIGINT UNSIGNED NOT NULL DEFAULT 0
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+
+        "CREATE TABLE IF NOT EXISTS backups (
+            id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+            revision BIGINT UNSIGNED NOT NULL,
+            created_at DATETIME NOT NULL,
+            payload MEDIUMTEXT NOT NULL
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
 
         "CREATE TABLE IF NOT EXISTS reminders (
