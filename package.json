@@ -1,0 +1,32 @@
+{
+  "name": "webfit",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "test": "npm run test:ts && npm run test:php",
+    "icons": "node scripts/make-icons.mjs",
+    "test:ts": "esbuild scripts/selftest.ts --bundle --platform=node --format=esm --outfile=node_modules/.cache/selftest.mjs --log-level=warning && node node_modules/.cache/selftest.mjs",
+    "test:php": "node scripts/php-check.mjs",
+    "mock-api": "node scripts/mock-api.mjs"
+  },
+  "dependencies": {
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.1.5",
+    "@types/node": "^26.2.0",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "@vitejs/plugin-react": "^4.4.1",
+    "php-parser": "^3.7.0",
+    "tailwindcss": "^4.1.5",
+    "typescript": "~5.8.3",
+    "vite": "^6.3.5",
+    "vite-plugin-pwa": "^1.0.0"
+  }
+}

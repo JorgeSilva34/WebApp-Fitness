@@ -1,0 +1,64 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-ink: #0b0f14;
+  --color-surface: #131a22;
+  --color-surface-2: #1a232e;
+  --color-line: #253243;
+  --color-text: #e7eef6;
+  --color-muted: #93a4b5;
+  --color-floor: #4ea767;
+  --color-target: #5aa2f0;
+  --color-accent: #d9a441;
+  --font-sans: 'Inter var', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    background-color: var(--color-ink);
+    color: var(--color-text);
+    font-family: var(--font-sans);
+    overscroll-behavior-y: none;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-target);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+  button {
+    -webkit-tap-highlight-color: transparent;
+  }
+  input[type='number']::-webkit-outer-spin-button,
+  input[type='number']::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type='number'] {
+    -moz-appearance: textfield;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@utility card {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: 14px;
+}
+
+@utility tap {
+  min-height: 48px;
+}

@@ -1,0 +1,53 @@
+name: Publicar en Hostinger
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+
+      # La carpeta que se sube: la app compilada más la API en /api.
+      # config.php no está aquí (vive sólo en el servidor) y por eso el
+      # despliegue nunca lo pisa. schema.sql tampoco se sube: no tiene por qué
+      # ser público.
+      - name: Preparar la carpeta de publicación
+        run: |
+          mkdir -p release/api
+          cp -r dist/* release/
+          cp api/*.php release/api/
+          cp api/.htaccess release/api/
+          rm -f release/api/config.php
+          ls -R release | head -40
+
+      # Secretos necesarios en el repositorio (Settings → Secrets → Actions):
+      #   FTP_SERVER    p. ej. ftp.tudominio.com
+      #   FTP_USERNAME  usuario FTP creado en hPanel
+      #   FTP_PASSWORD  contraseña de ese usuario
+      # Y la variable FTP_DIR (Settings → Variables), p. ej. /public_html/
+      - name: Subir por FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: ./release/
+          server-dir: ${{ vars.FTP_DIR || '/public_html/' }}
+          dangerous-clean-slate: false
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/config.php

@@ -1,0 +1,42 @@
+name: Avisos al móvil
+
+on:
+  schedule:
+    # 04:10 UTC = 04:10/05:10 en Canarias, antes del inicio de ventana (06:00).
+    # El cron de GitHub se retrasa a menudo; da igual, porque este trabajo no
+    # envía los avisos: los deja programados en ntfy con su hora exacta.
+    - cron: '10 4 * * *'
+  workflow_dispatch:
+    inputs:
+      modo:
+        description: 'Modo de ejecución'
+        required: false
+        default: 'programar'
+        type: choice
+        options: [programar, prueba, simulacro]
+
+jobs:
+  programar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Programar los avisos del día
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          NTFY_SERVER: ${{ vars.NTFY_SERVER }}
+          NTFY_TOKEN: ${{ secrets.NTFY_TOKEN }}
+          # Opcionales: si están, las horas se leen de la base de datos en vez
+          # de notify/reminders.json.
+          API_URL: ${{ vars.API_URL }}
+          API_TOKEN: ${{ secrets.API_TOKEN }}
+        run: |
+          case "${{ inputs.modo || 'programar' }}" in
+            prueba)    node notify/send.mjs --test ;;
+            simulacro) node notify/send.mjs --dry-run ;;
+            *)         node notify/send.mjs ;;
+          esac

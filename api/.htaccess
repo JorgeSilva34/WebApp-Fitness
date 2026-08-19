@@ -1,0 +1,16 @@
+# La configuración con las credenciales nunca debe servirse por HTTP.
+<FilesMatch "^config\.php$">
+    Require all denied
+</FilesMatch>
+
+# Algunos servidores no pasan la cabecera Authorization a PHP por CGI/FastCGI.
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteCond %{HTTP:Authorization} ^(.+)$
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%1]
+</IfModule>
+
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set Referrer-Policy "no-referrer"
+</IfModule>
