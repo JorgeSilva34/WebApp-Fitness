@@ -1,6 +1,16 @@
 # La configuración con las credenciales nunca debe servirse por HTTP.
+# Se prueban las dos sintaxis: si el módulo no está, la directiva daría un 500
+# que dejaría toda la carpeta inservible.
 <FilesMatch "^config\.php$">
-    Require all denied
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        <IfModule mod_access_compat.c>
+            Order allow,deny
+            Deny from all
+        </IfModule>
+    </IfModule>
 </FilesMatch>
 
 # Algunos servidores no pasan la cabecera Authorization a PHP por CGI/FastCGI.

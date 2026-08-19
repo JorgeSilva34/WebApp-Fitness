@@ -6,6 +6,33 @@ declare(strict_types=1);
  * CORS y creación del esquema.
  */
 
+/**
+ * Un error fatal de PHP devolvería una página HTML y la app solo podría decir
+ * «el servidor respondió 500». Convertirlo en JSON con el archivo y la línea
+ * ahorra tener que ir a buscar el registro de errores del hosting.
+ */
+set_exception_handler(function (Throwable $e): void {
+    json_out(500, [
+        'error' => 'Error interno: ' . $e->getMessage(),
+        'donde' => basename($e->getFile()) . ':' . $e->getLine(),
+    ]);
+});
+
+register_shutdown_function(function (): void {
+    $err = error_get_last();
+    if ($err === null || !in_array($err['type'], [E_ERROR, E_PARSE, E_COMPILE_ERROR, E_CORE_ERROR], true)) {
+        return;
+    }
+    if (!headers_sent()) {
+        http_response_code(500);
+        header('Content-Type: application/json; charset=utf-8');
+    }
+    echo json_encode([
+        'error' => 'Error fatal de PHP: ' . $err['message'],
+        'donde' => basename($err['file']) . ':' . $err['line'],
+    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+});
+
 function config(): array
 {
     static $config = null;

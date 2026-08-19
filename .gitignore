@@ -5,3 +5,6 @@ dev-dist/
 .DS_Store
 .vite/
 *.tsbuildinfo
+release/
+webfit-para-hostinger.zip
+api-actualizada.zip
